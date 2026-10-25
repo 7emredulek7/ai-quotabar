@@ -1,24 +1,32 @@
-# UsageBar
+# Headroom
 
-Claude Code ve Codex'in 5 saatlik ve haftalık limitlerini, yenilenme zamanlarını ve açık agent oturumlarını macOS menü barında gösterir.
+Kodlama agent'larının kullanım limitlerini, yenilenme zamanlarını ve açık agent oturumlarını macOS menü barında gösterir. Açık ve koyu modu sistemle birlikte değiştirir.
+
+Desteklenen sağlayıcılar: **Claude Code, Codex, Cursor, GitHub Copilot, Antigravity** ve (henüz veri olmadan) **Grok**. Hangilerinin görüneceği Ayarlar'dan seçilir. İlk açılışta, kuruluysa yalnızca Claude Code ve Codex açık gelir; ikisi de yoksa kurulu olan her sağlayıcı açılır.
 
 ## Çalıştırma
 
 ```bash
-./scripts/bundle.sh && open build/UsageBar.app
+./scripts/bundle.sh && open build/Headroom.app
 ```
 
-`build/UsageBar.app`'i `/Applications`'a taşıyıp menüdeki "Girişte başlat" ile otomatik açılmasını sağlayabilirsiniz.
+`build/Headroom.app`'i `/Applications`'a taşıyıp Ayarlar'daki "Girişte başlat" ile otomatik açılmasını sağlayabilirsiniz.
 
-Hata ayıklama için: `swift build && .build/debug/UsageBar --dump`
+Hata ayıklama için: `swift build && .build/debug/Headroom --dump`
 
 ## Veri kaynakları
 
-| | Kaynak | Not |
+| Sağlayıcı | Kaynak | Gösterilen |
 |---|---|---|
-| Claude limitleri | `api.anthropic.com/api/oauth/usage`, Claude Code'un Keychain'deki OAuth token'ı ile | 3 dakikada bir. Token yenilenmez; süresi dolarsa Claude Code'u açmak yeterli. |
-| Codex limitleri | `~/.codex/sessions/**.jsonl` içindeki son `rate_limits` olayı | Codex en son çalıştığında kaydedilen değer; "son veri" olarak gösterilir. |
-| Claude agent'ları | `~/.claude/sessions/<pid>.json` (çalışan süreçler, busy/idle) | 5 saniyede bir. |
-| Codex agent'ları | Son 30 dk'da yazılmış oturum logları, son turun bitip bitmediği | Tahmine dayalı. |
+| Claude Code | `api.anthropic.com/api/oauth/usage`, Claude Code'un Keychain'deki OAuth token'ı ile | 5 saatlik, haftalık |
+| Codex | `~/.codex/sessions/**.jsonl` içindeki son `rate_limits` olayı | 5 saatlik, haftalık (Codex en son çalıştığındaki değer) |
+| Cursor | `api2.cursor.sh` DashboardService, Cursor'un yerel `state.vscdb` dosyasındaki oturum token'ı ile | Fatura dönemi (haftalık/aylık) |
+| GitHub Copilot | `api.github.com/copilot_internal/user`, `gh auth token` ile | Aylık premium istekler |
+| Antigravity | Uygulama açıkken çalışan yerel language server (`GetUserStatus`) | Gemini ve Claude + GPT model kotaları |
+| Grok | — | Henüz veri kaynağı yok |
 
-Bunlar resmi olarak belgelenmiş API'ler değil; Claude Code veya Codex güncellemeleriyle değişebilir.
+Agent listesi Claude Code (`~/.claude/sessions/<pid>.json`) ve Codex (son 30 dakikada yazılmış oturum logları) için gösterilir.
+
+Token'lar hiçbir zaman yenilenmez veya saklanmaz; yalnızca ilgili sağlayıcının kendi sunucusuna gönderilir. Uygulama ikonları çalışma anında bu Mac'te kurulu uygulamalardan okunur.
+
+Bunlar resmi olarak belgelenmiş API'ler değil; sağlayıcıların güncellemeleriyle değişebilir.

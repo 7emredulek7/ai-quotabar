@@ -2,8 +2,8 @@ import Darwin
 import Foundation
 
 enum AgentScanner {
-    static func scan() -> [Agent] {
-        (claudeAgents() + codexAgents()).sorted {
+    static func scan(enabled: Set<ProviderID>) -> [Agent] {
+        ((enabled.contains(.claude) ? claudeAgents() : []) + (enabled.contains(.codex) ? codexAgents() : [])).sorted {
             if $0.status != $1.status { return $0.status == .working }
             return ($0.lastActivity ?? .distantPast) > ($1.lastActivity ?? .distantPast)
         }
@@ -28,7 +28,7 @@ enum AgentScanner {
                 .map { Date(timeIntervalSince1970: $0 / 1000) }
             return Agent(
                 id: "claude-\(pid)",
-                tool: .claude,
+                provider: .claude,
                 title: (d["name"] as? String) ?? cwd.map { ($0 as NSString).lastPathComponent } ?? "Claude Code",
                 cwd: cwd,
                 status: (d["status"] as? String) == "busy" ? .working : .idle,
@@ -71,7 +71,7 @@ enum AgentScanner {
             let stale = Date().timeIntervalSince(file.modified) > 5 * 60
             return Agent(
                 id: "codex-\(id)",
-                tool: .codex,
+                provider: .codex,
                 title: names[id] ?? subagentName.map { "↳ \($0)" }
                     ?? cwd.map { ($0 as NSString).lastPathComponent } ?? "Codex",
                 cwd: cwd,

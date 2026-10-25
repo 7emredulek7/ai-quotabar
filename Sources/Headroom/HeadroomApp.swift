@@ -2,20 +2,34 @@ import AppKit
 import SwiftUI
 
 @main
-struct UsageBarApp: App {
+struct HeadroomApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     init() {
         if CommandLine.arguments.contains("--dump") { Self.dump() }
     }
 
-    /// `UsageBar --dump` prints what the providers see, for debugging.
+    /// `Headroom --dump` prints what every installed provider returns, for debugging.
     private static func dump() -> Never {
         let done = DispatchSemaphore(value: 0)
         Task.detached {
-            do { print("Claude:", try await ClaudeProvider.fetch()) } catch { print("Claude error:", error) }
-            do { print("Codex:", try CodexProvider.fetch()) } catch { print("Codex error:", error) }
-            AgentScanner.scan().forEach { print("Agent:", $0.tool, $0.status, $0.title, $0.cwd ?? "") }
+            for p in ProviderID.allCases {
+                let state = p.isInstalled ? (ProviderSettings.isEnabled(p) ? "on" : "off") : "not installed"
+                print("\(p.name) [\(state)]")
+                guard p.isInstalled else { continue }
+                do {
+                    let u = try await p.fetch()
+                    print("  plan: \(u.plan ?? "-")")
+                    for w in u.windows {
+                        print("  \(w.label): used \(w.usedPercent)%\(w.unlimited ? " (unlimited)" : "") resets \(w.resetsAt.map { "\($0)" } ?? "-") \(w.note ?? "")")
+                    }
+                } catch {
+                    print("  error: \(error.localizedDescription)")
+                }
+            }
+            AgentScanner.scan(enabled: [.claude, .codex]).forEach {
+                print("Agent: \($0.provider.name) \($0.status) \($0.title) \($0.cwd ?? "")")
+            }
             done.signal()
         }
         done.wait()
@@ -59,11 +73,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MainActor.assumeIsolated { self?.updateLabel() }
         }
 
-        if ProcessInfo.processInfo.environment["USAGEBAR_DEBUG"] != nil {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+        if ProcessInfo.processInfo.environment["HEADROOM_DEBUG"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
                 guard let self, let button = self.statusItem.button else { return }
                 let line = "visible: \(self.statusItem.isVisible) title: \(button.title) "
-                    + "frame: \(button.window?.frame ?? .zero) screen: \(button.window?.screen?.frame ?? .zero)\n"
+                    + "frame: \(button.window?.frame ?? .zero)\n"
                 FileHandle.standardError.write(Data(line.utf8))
             }
         }
@@ -93,21 +107,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let working = store.workingCount
         button.image = NSImage(
             systemSymbolName: working > 0 ? "gauge.with.dots.needle.67percent" : "gauge.with.dots.needle.33percent",
-            accessibilityDescription: "Kullanım"
+            accessibilityDescription: "Headroom"
         )
         button.image?.isTemplate = true
         button.title = " " + labelText(working: working)
     }
 
-    /// Compact 5-hour figures for both tools, e.g. "C 82% · X 12%".
+    /// The first window of every enabled provider, e.g. "C 78% · X 12% · Gh ∞".
     private func labelText(working: Int) -> String {
         let showRemaining = UserDefaults.standard.object(forKey: "showRemaining") as? Bool ?? true
-        func format(_ w: UsageWindow) -> String {
-            "\(Int((showRemaining ? w.remainingPercent : w.usedPercent).rounded()))%"
-        }
         var parts: [String] = []
-        if let w = normalized(store.claude?.fiveHour) { parts.append("C \(format(w))") }
-        if let w = normalized(store.codex?.fiveHour) { parts.append("X \(format(w))") }
+        for p in store.enabled {
+            guard let first = store.entries[p]?.usage?.windows.first else { continue }
+            let w = normalized(first)
+            let value = w.unlimited ? "∞" : "\(Int((showRemaining ? w.remainingPercent : w.usedPercent).rounded()))%"
+            parts.append("\(p.short) \(value)")
+        }
         if working > 0 { parts.append("⚡︎\(working)") }
         return parts.isEmpty ? "—" : parts.joined(separator: " · ")
     }

@@ -18,17 +18,25 @@ enum CodexProvider {
         }
         guard let best else { throw ProviderError.noData }
 
-        var usage = ProviderUsage(asOf: best.date)
+        var usage = ProviderUsage(asOf: best.date, fromLogs: true)
         usage.plan = (best.limits["plan_type"] as? String)?.capitalized
         for key in ["primary", "secondary"] {
             guard let d = best.limits[key] as? [String: Any],
                   let used = d["used_percent"] as? Double else { continue }
             let resets = (d["resets_at"] as? Double).map { Date(timeIntervalSince1970: $0) }
-            let w = UsageWindow(usedPercent: used, resetsAt: resets)
             let minutes = d["window_minutes"] as? Double ?? 0
-            if minutes >= 24 * 60 { usage.weekly = w } else { usage.fiveHour = w }
+            usage.windows.append(UsageWindow(label: label(minutes: minutes), usedPercent: used, resetsAt: resets))
         }
         return usage
+    }
+
+    private static func label(minutes: Double) -> String {
+        switch minutes {
+        case 0: return "Limit"
+        case ..<(24 * 60): return "\(Int((minutes / 60).rounded())) saatlik"
+        case (6 * 24 * 60)...(8 * 24 * 60): return "Haftalık"
+        default: return "\(Int((minutes / 1440).rounded())) günlük"
+        }
     }
 
     struct SessionFile {

@@ -14,62 +14,49 @@ enum ClaudeProvider {
 
     static func fetch() async throws -> ProviderUsage {
         let creds = try readCredentials()
-        if let exp = creds.expiresAt, exp < Date() { throw ProviderError.tokenExpired }
+        if let exp = creds.expiresAt, exp < Date() { throw ProviderError.tokenExpired(app: "Claude Code") }
 
         var req = URLRequest(url: usageURL, timeoutInterval: 15)
         req.setValue("Bearer \(creds.accessToken)", forHTTPHeaderField: "Authorization")
         req.setValue("oauth-2025-04-20", forHTTPHeaderField: "anthropic-beta")
-        req.setValue("UsageBar/1.0", forHTTPHeaderField: "User-Agent")
+        req.setValue("Headroom/1.0", forHTTPHeaderField: "User-Agent")
 
         let (data, resp) = try await URLSession.shared.data(for: req)
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         switch code {
         case 200: break
-        case 401, 403: throw ProviderError.tokenExpired
+        case 401, 403: throw ProviderError.tokenExpired(app: "Claude Code")
         case 429: throw ProviderError.rateLimited
         default: throw ProviderError.http(code)
         }
 
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
-        return ProviderUsage(
-            fiveHour: window(json["five_hour"]),
-            weekly: window(json["seven_day"]),
-            plan: creds.plan?.capitalized,
-            asOf: Date()
-        )
+        let windows = [
+            window("5 saatlik", json["five_hour"]),
+            window("Haftalık", json["seven_day"]),
+            window("Haftalık · Opus", json["seven_day_opus"]),
+            window("Haftalık · Sonnet", json["seven_day_sonnet"]),
+        ].compactMap { $0 }
+        return ProviderUsage(windows: windows, plan: creds.plan?.capitalized)
     }
 
-    private static func window(_ any: Any?) -> UsageWindow? {
+    private static func window(_ label: String, _ any: Any?) -> UsageWindow? {
         guard let d = any as? [String: Any], let used = d["utilization"] as? Double else { return nil }
-        return UsageWindow(usedPercent: used, resetsAt: (d["resets_at"] as? String).flatMap(parseISODate))
+        return UsageWindow(label: label, usedPercent: used, resetsAt: (d["resets_at"] as? String).flatMap(parseISODate))
     }
 
     private static func readCredentials() throws -> Credentials {
         // Shelling out to `security` keeps keychain access stable across
         // rebuilds; a direct SecItem call would re-prompt for every new binary.
-        let data = keychainPassword(service: "Claude Code-credentials")
-            ?? (try? Data(contentsOf: FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".claude/.credentials.json")))
+        let data = Shell.run("/usr/bin/security", ["find-generic-password", "-s", "Claude Code-credentials", "-w"])
+            ?? (try? Data(contentsOf: URL(fileURLWithPath: "\(homePath)/.claude/.credentials.json")))
         guard let data,
               let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let oauth = root["claudeAiOauth"] as? [String: Any],
               let token = oauth["accessToken"] as? String
-        else { throw ProviderError.noCredentials }
+        else { throw ProviderError.noCredentials("Claude Code girişi bulunamadı") }
 
         let expiresAt = (oauth["expiresAt"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) }
         return Credentials(accessToken: token, expiresAt: expiresAt, plan: oauth["subscriptionType"] as? String)
-    }
-
-    private static func keychainPassword(service: String) -> Data? {
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/usr/bin/security")
-        p.arguments = ["find-generic-password", "-s", service, "-w"]
-        let out = Pipe()
-        p.standardOutput = out
-        p.standardError = Pipe()
-        do { try p.run() } catch { return nil }
-        let data = out.fileHandleForReading.readDataToEndOfFile()
-        p.waitUntilExit()
-        return p.terminationStatus == 0 && !data.isEmpty ? data : nil
     }
 }

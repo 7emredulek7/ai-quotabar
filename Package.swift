@@ -2,9 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "UsageBar",
+    name: "Headroom",
     platforms: [.macOS(.v14)],
     targets: [
-        .executableTarget(name: "UsageBar", path: "Sources/UsageBar")
+        .executableTarget(
+            name: "Headroom",
+            path: "Sources/Headroom",
+            linkerSettings: [.linkedLibrary("sqlite3")]
+        )
     ]
 )
