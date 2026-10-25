@@ -1,3 +1,5 @@
+<img src="assets/icon.png" width="128" alt="AI Quotabar icon">
+
 # AI Quotabar
 
 A macOS menu bar app that shows how much of your AI coding agents' usage limits is left, when each limit resets, and which agent sessions are running. It follows the system light/dark appearance.
