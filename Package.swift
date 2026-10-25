@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "Headroom",
+    name: "AIQuotabar",
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
-            name: "Headroom",
-            path: "Sources/Headroom",
+            name: "AIQuotabar",
+            path: "Sources/AIQuotabar",
             linkerSettings: [.linkedLibrary("sqlite3")]
         )
     ]

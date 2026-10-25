@@ -51,7 +51,7 @@ struct OverviewView: View {
 
     private func header(now: Date) -> some View {
         HStack(spacing: 8) {
-            Text("Headroom").font(.system(size: 15, weight: .semibold))
+            Text("AI Quotabar").font(.system(size: 15, weight: .semibold))
             Spacer()
             if let last = store.lastRefresh {
                 Text(relative(last, now: now)).font(.caption).foregroundStyle(.secondary)

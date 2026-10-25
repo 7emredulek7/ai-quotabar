@@ -2,14 +2,14 @@ import AppKit
 import SwiftUI
 
 @main
-struct HeadroomApp: App {
+struct AIQuotabarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     init() {
         if CommandLine.arguments.contains("--dump") { Self.dump() }
     }
 
-    /// `Headroom --dump` prints what every installed provider returns, for debugging.
+    /// `AIQuotabar --dump` prints what every installed provider returns, for debugging.
     private static func dump() -> Never {
         let done = DispatchSemaphore(value: 0)
         Task.detached {
@@ -73,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MainActor.assumeIsolated { self?.updateLabel() }
         }
 
-        if ProcessInfo.processInfo.environment["HEADROOM_DEBUG"] != nil {
+        if ProcessInfo.processInfo.environment["QUOTABAR_DEBUG"] != nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
                 guard let self, let button = self.statusItem.button else { return }
                 let line = "visible: \(self.statusItem.isVisible) title: \(button.title) "
@@ -107,7 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let working = store.workingCount
         button.image = NSImage(
             systemSymbolName: working > 0 ? "gauge.with.dots.needle.67percent" : "gauge.with.dots.needle.33percent",
-            accessibilityDescription: "Headroom"
+            accessibilityDescription: "AI Quotabar"
         )
         button.image?.isTemplate = true
         button.title = " " + labelText(working: working)

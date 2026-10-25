@@ -12,7 +12,7 @@ enum CopilotProvider {
         var req = URLRequest(url: url, timeoutInterval: 15)
         req.setValue("token \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("Headroom/1.0", forHTTPHeaderField: "User-Agent")
+        req.setValue("AIQuotabar/1.0", forHTTPHeaderField: "User-Agent")
 
         let (data, resp) = try await URLSession.shared.data(for: req)
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0

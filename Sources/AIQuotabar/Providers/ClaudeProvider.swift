@@ -19,7 +19,7 @@ enum ClaudeProvider {
         var req = URLRequest(url: usageURL, timeoutInterval: 15)
         req.setValue("Bearer \(creds.accessToken)", forHTTPHeaderField: "Authorization")
         req.setValue("oauth-2025-04-20", forHTTPHeaderField: "anthropic-beta")
-        req.setValue("Headroom/1.0", forHTTPHeaderField: "User-Agent")
+        req.setValue("AIQuotabar/1.0", forHTTPHeaderField: "User-Agent")
 
         let (data, resp) = try await URLSession.shared.data(for: req)
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
