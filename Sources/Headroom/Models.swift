@@ -45,12 +45,12 @@ enum ProviderError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noCredentials(let hint): return hint
-        case .tokenExpired(let app): return "Oturum süresi dolmuş, \(app) uygulamasını bir kez açın"
-        case .notRunning(let app): return "\(app) açık değil; açınca kota görünür"
-        case .rateLimited: return "Çok sık istek, birazdan tekrar denenecek"
-        case .http(let code): return "Sunucu hatası (\(code))"
-        case .noData: return "Henüz veri yok"
-        case .unsupported: return "Kullanım verisi henüz okunamıyor"
+        case .tokenExpired(let app): return "Session expired, open \(app) once to refresh it"
+        case .notRunning(let app): return "\(app) isn't running; open it to see quotas"
+        case .rateLimited: return "Rate limited, will retry shortly"
+        case .http(let code): return "Server error (\(code))"
+        case .noData: return "No data yet"
+        case .unsupported: return "Usage data not available yet"
         }
     }
 }

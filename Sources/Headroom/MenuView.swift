@@ -32,7 +32,7 @@ struct OverviewView: View {
                 header(now: context.date)
 
                 if store.enabled.isEmpty {
-                    Text("Hiç sağlayıcı açık değil. Ayarlar'dan açabilirsiniz.")
+                    Text("No providers enabled. Turn some on in Settings.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 ForEach(store.enabled) { p in
@@ -56,7 +56,7 @@ struct OverviewView: View {
             if let last = store.lastRefresh {
                 Text(relative(last, now: now)).font(.caption).foregroundStyle(.secondary)
             }
-            IconButton(systemName: "arrow.clockwise", label: "Yenile") {
+            IconButton(systemName: "arrow.clockwise", label: "Refresh") {
                 Task { await store.refreshUsage() }
             }
             .disabled(store.isRefreshing)
@@ -65,19 +65,19 @@ struct OverviewView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Picker("Gösterilen değer", selection: $showRemaining) {
-                Text("Kalan").tag(true)
-                Text("Kullanılan").tag(false)
+            Picker("Show", selection: $showRemaining) {
+                Text("Remaining").tag(true)
+                Text("Used").tag(false)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
             .fixedSize()
             .controlSize(.small)
             Spacer()
-            Button("Ayarlar…", action: openSettings)
+            Button("Settings…", action: openSettings)
                 .buttonStyle(.borderless)
                 .keyboardShortcut(",")
-            Button("Çıkış") { NSApplication.shared.terminate(nil) }
+            Button("Quit") { NSApplication.shared.terminate(nil) }
                 .buttonStyle(.borderless)
                 .keyboardShortcut("q")
         }
@@ -106,7 +106,7 @@ struct ProviderSection: View {
                 }
                 Spacer()
                 if let usage = entry?.usage, usage.fromLogs {
-                    Text("son veri \(relative(usage.asOf, now: now))")
+                    Text("as of \(relative(usage.asOf, now: now))")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -154,10 +154,10 @@ struct WindowRow: View {
     }
 
     private var valueText: String {
-        if window.unlimited { return "Sınırsız" }
+        if window.unlimited { return "Unlimited" }
         return showRemaining
-            ? "%\(Int(window.remainingPercent.rounded())) kaldı"
-            : "%\(Int(window.usedPercent.rounded())) kullanıldı"
+            ? "\(Int(window.remainingPercent.rounded()))% left"
+            : "\(Int(window.usedPercent.rounded()))% used"
     }
 
     private var caption: String {
@@ -165,10 +165,10 @@ struct WindowRow: View {
         if let note = window.note { parts.append(note) }
         if let reset = window.resetsAt {
             parts.append(window.unlimited
-                ? "yenilenme \(absolute(reset, now: now))"
-                : "\(countdown(to: reset, now: now)) sonra yenilenir · \(absolute(reset, now: now))")
+                ? "resets \(absolute(reset, now: now))"
+                : "resets in \(countdown(to: reset, now: now)) · \(absolute(reset, now: now))")
         } else if parts.isEmpty {
-            parts.append("Yenilenme zamanı bilinmiyor")
+            parts.append("Reset time unknown")
         }
         return parts.joined(separator: " · ")
     }
@@ -200,14 +200,14 @@ struct AgentsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Agent'lar").font(.system(size: 14, weight: .semibold))
+                Text("Agents").font(.system(size: 14, weight: .semibold))
                 Spacer()
                 let working = agents.filter { $0.status == .working }.count
-                Text("\(working) çalışıyor · \(agents.count - working) boşta")
+                Text("\(working) working · \(agents.count - working) idle")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if agents.isEmpty {
-                Text("Açık oturum yok").font(.caption).foregroundStyle(.secondary)
+                Text("No open sessions").font(.caption).foregroundStyle(.secondary)
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
@@ -265,13 +265,13 @@ struct SettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 8) {
-                IconButton(systemName: "chevron.left", label: "Geri", action: close)
+                IconButton(systemName: "chevron.left", label: "Back", action: close)
                     .keyboardShortcut(.cancelAction)
-                Text("Ayarlar").font(.system(size: 15, weight: .semibold))
+                Text("Settings").font(.system(size: 15, weight: .semibold))
             }
 
             VStack(alignment: .leading, spacing: 0) {
-                SectionTitle("Sağlayıcılar")
+                SectionTitle("Providers")
                 ForEach(Array(ProviderID.allCases.enumerated()), id: \.element) { index, p in
                     providerRow(p)
                     if index < ProviderID.allCases.count - 1 { Divider() }
@@ -279,13 +279,13 @@ struct SettingsView: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                SectionTitle("Menü barı")
+                SectionTitle("Menu bar")
                 HStack {
-                    Text("Gösterilen değer")
+                    Text("Show")
                     Spacer()
-                    Picker("Gösterilen değer", selection: $showRemaining) {
-                        Text("Kalan").tag(true)
-                        Text("Kullanılan").tag(false)
+                    Picker("Show", selection: $showRemaining) {
+                        Text("Remaining").tag(true)
+                        Text("Used").tag(false)
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
@@ -293,16 +293,16 @@ struct SettingsView: View {
                     .controlSize(.small)
                 }
                 HStack {
-                    Text("Yenileme sıklığı")
+                    Text("Refresh every")
                     Spacer()
-                    Picker("Yenileme sıklığı", selection: Binding(get: { store.refreshMinutes }, set: { store.refreshMinutes = $0 })) {
-                        ForEach(UsageStore.refreshChoices, id: \.self) { Text("\($0) dakika").tag($0) }
+                    Picker("Refresh every", selection: Binding(get: { store.refreshMinutes }, set: { store.refreshMinutes = $0 })) {
+                        ForEach(UsageStore.refreshChoices, id: \.self) { Text("\($0) min").tag($0) }
                     }
                     .labelsHidden()
                     .fixedSize()
                     .controlSize(.small)
                 }
-                Toggle("Girişte başlat", isOn: $launchAtLogin)
+                Toggle("Launch at login", isOn: $launchAtLogin)
                     .toggleStyle(.switch)
                     .controlSize(.small)
                     .onChange(of: launchAtLogin) { _, on in
@@ -325,7 +325,7 @@ struct SettingsView: View {
                     .opacity(installed ? 1 : 0.4)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(p.name).font(.system(size: 13, weight: .medium))
-                    Text(installed ? p.summary : "Bu Mac'te bulunamadı")
+                    Text(installed ? p.summary : "Not found on this Mac")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -344,7 +344,7 @@ struct SectionTitle: View {
     init(_ text: String) { self.text = text }
 
     var body: some View {
-        Text(text.uppercased(with: Locale(identifier: "tr_TR")))
+        Text(text.uppercased())
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(.secondary)
             .tracking(0.4)
@@ -404,22 +404,22 @@ struct IconButton: View {
 func countdown(to date: Date, now: Date) -> String {
     let secs = max(0, Int(date.timeIntervalSince(now)))
     let d = secs / 86400, h = secs % 86400 / 3600, m = secs % 3600 / 60
-    if d > 0 { return "\(d) g \(h) sa" }
-    if h > 0 { return "\(h) sa \(m) dk" }
-    return "\(max(m, 1)) dk"
+    if d > 0 { return "\(d)d \(h)h" }
+    if h > 0 { return "\(h)h \(m)m" }
+    return "\(max(m, 1))m"
 }
 
 func absolute(_ date: Date, now: Date) -> String {
     let f = DateFormatter()
-    f.locale = Locale(identifier: "tr_TR")
-    f.dateFormat = Calendar.current.isDate(date, inSameDayAs: now) ? "'bugün' HH:mm" : "d MMM EEE HH:mm"
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.dateFormat = Calendar.current.isDate(date, inSameDayAs: now) ? "'today' HH:mm" : "EEE, MMM d HH:mm"
     return f.string(from: date)
 }
 
 func relative(_ date: Date, now: Date) -> String {
     let secs = Int(now.timeIntervalSince(date))
-    if secs < 60 { return "az önce" }
-    if secs < 3600 { return "\(secs / 60) dk önce" }
-    if secs < 86400 { return "\(secs / 3600) sa önce" }
-    return "\(secs / 86400) g önce"
+    if secs < 60 { return "just now" }
+    if secs < 3600 { return "\(secs / 60)m ago" }
+    if secs < 86400 { return "\(secs / 3600)h ago" }
+    return "\(secs / 86400)d ago"
 }

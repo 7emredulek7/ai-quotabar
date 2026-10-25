@@ -1,32 +1,44 @@
 # Headroom
 
-Kodlama agent'larının kullanım limitlerini, yenilenme zamanlarını ve açık agent oturumlarını macOS menü barında gösterir. Açık ve koyu modu sistemle birlikte değiştirir.
+A macOS menu bar app that shows how much of your AI coding agents' usage limits is left, when each limit resets, and which agent sessions are running. It follows the system light/dark appearance.
 
-Desteklenen sağlayıcılar: **Claude Code, Codex, Cursor, GitHub Copilot, Antigravity** ve (henüz veri olmadan) **Grok**. Hangilerinin görüneceği Ayarlar'dan seçilir. İlk açılışta, kuruluysa yalnızca Claude Code ve Codex açık gelir; ikisi de yoksa kurulu olan her sağlayıcı açılır.
+Supported providers: **Claude Code, Codex, Cursor, GitHub Copilot, Antigravity**, and **Grok** (listed, no usage data yet). Choose which ones appear in Settings. On first launch only Claude Code and Codex are enabled, if installed; if neither is, every installed provider is enabled.
 
-## Çalıştırma
+## Install
+
+1. Download `Headroom.zip` from the [latest release](https://github.com/7emredulek7/headroom/releases/latest) and unzip it.
+2. Move `Headroom.app` to `/Applications`.
+3. The app is not notarized, so macOS blocks the first launch. Either right-click the app and choose **Open**, or run:
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/Headroom.app
+   ```
+
+Requires macOS 14 or later. Turn on **Launch at login** in Settings to start it automatically.
+
+## Build from source
 
 ```bash
 ./scripts/bundle.sh && open build/Headroom.app
 ```
 
-`build/Headroom.app`'i `/Applications`'a taşıyıp Ayarlar'daki "Girişte başlat" ile otomatik açılmasını sağlayabilirsiniz.
+`./scripts/release.sh 0.2.0` builds a universal (Apple silicon + Intel) `build/Headroom.zip` for a release.
 
-Hata ayıklama için: `swift build && .build/debug/Headroom --dump`
+For debugging, print what every provider returns: `swift build && .build/debug/Headroom --dump`
 
-## Veri kaynakları
+## Where the numbers come from
 
-| Sağlayıcı | Kaynak | Gösterilen |
+| Provider | Source | Shown |
 |---|---|---|
-| Claude Code | `api.anthropic.com/api/oauth/usage`, Claude Code'un Keychain'deki OAuth token'ı ile | 5 saatlik, haftalık |
-| Codex | `~/.codex/sessions/**.jsonl` içindeki son `rate_limits` olayı | 5 saatlik, haftalık (Codex en son çalıştığındaki değer) |
-| Cursor | `api2.cursor.sh` DashboardService, Cursor'un yerel `state.vscdb` dosyasındaki oturum token'ı ile | Fatura dönemi (haftalık/aylık) |
-| GitHub Copilot | `api.github.com/copilot_internal/user`, `gh auth token` ile | Aylık premium istekler |
-| Antigravity | Uygulama açıkken çalışan yerel language server (`GetUserStatus`) | Gemini ve Claude + GPT model kotaları |
-| Grok | — | Henüz veri kaynağı yok |
+| Claude Code | `api.anthropic.com/api/oauth/usage`, with Claude Code's OAuth token from the Keychain | 5-hour, weekly |
+| Codex | The latest `rate_limits` event in `~/.codex/sessions/**.jsonl` | 5-hour, weekly (as of Codex's last run) |
+| Cursor | `api2.cursor.sh` DashboardService, with the session token from Cursor's local `state.vscdb` | Billing cycle (weekly or monthly) |
+| GitHub Copilot | `api.github.com/copilot_internal/user`, with `gh auth token` | Monthly premium requests |
+| Antigravity | The local language server (`GetUserStatus`), while the app is running | Gemini and Claude + GPT model quotas |
+| Grok | — | No usage source yet |
 
-Agent listesi Claude Code (`~/.claude/sessions/<pid>.json`) ve Codex (son 30 dakikada yazılmış oturum logları) için gösterilir.
+The agent list covers Claude Code (`~/.claude/sessions/<pid>.json`) and Codex (session logs written in the last 30 minutes).
 
-Token'lar hiçbir zaman yenilenmez veya saklanmaz; yalnızca ilgili sağlayıcının kendi sunucusuna gönderilir. Uygulama ikonları çalışma anında bu Mac'te kurulu uygulamalardan okunur.
+Tokens are never refreshed or stored; each is only sent to its own provider's server. Provider icons are read at runtime from the apps installed on your Mac.
 
-Bunlar resmi olarak belgelenmiş API'ler değil; sağlayıcıların güncellemeleriyle değişebilir.
+None of these are documented public APIs, so a provider update can break them.

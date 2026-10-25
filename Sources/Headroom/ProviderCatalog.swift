@@ -32,11 +32,11 @@ enum ProviderID: String, CaseIterable, Identifiable {
     /// What the provider's numbers mean, for the settings list.
     var summary: String {
         switch self {
-        case .claude, .codex: return "5 saatlik + haftalık"
-        case .cursor: return "Fatura dönemi kullanımı"
-        case .copilot: return "Aylık premium istekler"
-        case .antigravity: return "Model kotaları"
-        case .grok: return "Kullanım verisi henüz okunamıyor"
+        case .claude, .codex: return "5-hour + weekly"
+        case .cursor: return "Billing cycle usage"
+        case .copilot: return "Monthly premium requests"
+        case .antigravity: return "Model quotas"
+        case .grok: return "Usage data not available yet"
         }
     }
 

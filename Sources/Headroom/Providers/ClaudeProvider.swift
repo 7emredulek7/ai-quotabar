@@ -32,10 +32,10 @@ enum ClaudeProvider {
 
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
         let windows = [
-            window("5 saatlik", json["five_hour"]),
-            window("Haftalık", json["seven_day"]),
-            window("Haftalık · Opus", json["seven_day_opus"]),
-            window("Haftalık · Sonnet", json["seven_day_sonnet"]),
+            window("5-hour", json["five_hour"]),
+            window("Weekly", json["seven_day"]),
+            window("Weekly · Opus", json["seven_day_opus"]),
+            window("Weekly · Sonnet", json["seven_day_sonnet"]),
         ].compactMap { $0 }
         return ProviderUsage(windows: windows, plan: creds.plan?.capitalized)
     }
@@ -54,7 +54,7 @@ enum ClaudeProvider {
               let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let oauth = root["claudeAiOauth"] as? [String: Any],
               let token = oauth["accessToken"] as? String
-        else { throw ProviderError.noCredentials("Claude Code girişi bulunamadı") }
+        else { throw ProviderError.noCredentials("Not signed in to Claude Code") }
 
         let expiresAt = (oauth["expiresAt"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) }
         return Credentials(accessToken: token, expiresAt: expiresAt, plan: oauth["subscriptionType"] as? String)

@@ -12,7 +12,7 @@ enum CursorProvider {
     static func fetch() async throws -> ProviderUsage {
         let stored = readState(keys: ["cursorAuth/accessToken", "cursorAuth/stripeMembershipType"])
         guard let token = stored["cursorAuth/accessToken"], !token.isEmpty else {
-            throw ProviderError.noCredentials("Cursor'a giriş yapılmamış")
+            throw ProviderError.noCredentials("Not signed in to Cursor")
         }
         let claims = jwtClaims(token)
         if let exp = claims["exp"] as? Double, Date(timeIntervalSince1970: exp) < Date() {
@@ -71,9 +71,9 @@ enum CursorProvider {
     }
 
     private static func window(used: Double, start: Date?, end: Date?) -> UsageWindow {
-        var label = "Fatura dönemi"
+        var label = "Billing cycle"
         if let start, let end {
-            label = end.timeIntervalSince(start) <= 8 * 86400 ? "Haftalık" : "Aylık"
+            label = end.timeIntervalSince(start) <= 8 * 86400 ? "Weekly" : "Monthly"
         }
         return UsageWindow(label: label, usedPercent: used, resetsAt: end)
     }

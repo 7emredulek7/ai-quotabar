@@ -33,9 +33,9 @@ enum CodexProvider {
     private static func label(minutes: Double) -> String {
         switch minutes {
         case 0: return "Limit"
-        case ..<(24 * 60): return "\(Int((minutes / 60).rounded())) saatlik"
-        case (6 * 24 * 60)...(8 * 24 * 60): return "Haftalık"
-        default: return "\(Int((minutes / 1440).rounded())) günlük"
+        case ..<(24 * 60): return "\(Int((minutes / 60).rounded()))-hour"
+        case (6 * 24 * 60)...(8 * 24 * 60): return "Weekly"
+        default: return "\(Int((minutes / 1440).rounded()))-day"
         }
     }
 

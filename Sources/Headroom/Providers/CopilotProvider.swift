@@ -7,7 +7,7 @@ enum CopilotProvider {
 
     static func fetch() async throws -> ProviderUsage {
         guard let token = githubToken() else {
-            throw ProviderError.noCredentials("`gh auth login` ile GitHub'a giriş yapın")
+            throw ProviderError.noCredentials("Sign in to GitHub with `gh auth login`")
         }
         var req = URLRequest(url: url, timeoutInterval: 15)
         req.setValue("token \(token)", forHTTPHeaderField: "Authorization")
@@ -18,8 +18,8 @@ enum CopilotProvider {
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         switch code {
         case 200: break
-        case 401: throw ProviderError.noCredentials("GitHub oturumu geçersiz, `gh auth login` çalıştırın")
-        case 403, 404: throw ProviderError.noCredentials("Bu GitHub hesabında Copilot yok")
+        case 401: throw ProviderError.noCredentials("GitHub session invalid, run `gh auth login`")
+        case 403, 404: throw ProviderError.noCredentials("This GitHub account has no Copilot access")
         default: throw ProviderError.http(code)
         }
 
@@ -28,7 +28,7 @@ enum CopilotProvider {
         let snapshots = json["quota_snapshots"] as? [String: Any] ?? [:]
 
         var windows: [UsageWindow] = []
-        for (key, label) in [("premium_interactions", "Premium istekler"), ("chat", "Sohbet"), ("completions", "Tamamlama")] {
+        for (key, label) in [("premium_interactions", "Premium requests"), ("chat", "Chat"), ("completions", "Completions")] {
             guard let s = snapshots[key] as? [String: Any] else { continue }
             let unlimited = s["unlimited"] as? Bool ?? false
             // Chat and completions are unlimited on every paid plan; only
@@ -38,13 +38,13 @@ enum CopilotProvider {
             if unlimited {
                 let credits = parseLooseDouble(s["credits_used"]) ?? 0
                 windows.append(UsageWindow(label: label, usedPercent: 0, resetsAt: reset, unlimited: true,
-                                           note: credits > 0 ? "\(Int(credits)) kredi kullanıldı" : nil))
+                                           note: credits > 0 ? "\(Int(credits)) credits used" : nil))
             } else {
                 let remaining = parseLooseDouble(s["percent_remaining"]) ?? 100
                 let entitlement = parseLooseDouble(s["entitlement"]) ?? 0
                 let left = parseLooseDouble(s["remaining"]) ?? 0
                 windows.append(UsageWindow(label: label, usedPercent: 100 - remaining, resetsAt: reset,
-                                           note: entitlement > 0 ? "\(Int(entitlement - left))/\(Int(entitlement)) kullanıldı" : nil))
+                                           note: entitlement > 0 ? "\(Int(entitlement - left))/\(Int(entitlement)) used" : nil))
             }
         }
         if windows.isEmpty { throw ProviderError.noData }
