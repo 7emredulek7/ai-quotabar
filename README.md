@@ -6,9 +6,8 @@ Supported providers: **Claude Code, Codex, Cursor, GitHub Copilot, Antigravity**
 
 ## Install
 
-1. Download `AIQuotabar.zip` from the [latest release](https://github.com/7emredulek7/ai-quotabar/releases/latest) and unzip it.
-2. Move `AI Quotabar.app` to `/Applications`.
-3. The app is not notarized, so macOS blocks the first launch. Either right-click the app and choose **Open**, or run:
+1. Download `AIQuotabar.dmg` from the [latest release](https://github.com/7emredulek7/ai-quotabar/releases/latest), open it and drag **AI Quotabar** onto **Applications**. (A `.zip` of the app is there too.)
+2. The app is not notarized, so macOS blocks the first launch. Either right-click the app and choose **Open**, or run:
 
    ```bash
    xattr -dr com.apple.quarantine "/Applications/AI Quotabar.app"
@@ -22,7 +21,7 @@ Requires macOS 14 or later. Turn on **Launch at login** in Settings to start it 
 ./scripts/bundle.sh && open "build/AI Quotabar.app"
 ```
 
-`./scripts/release.sh 0.2.1` builds a universal (Apple silicon + Intel) `build/AIQuotabar.zip` for a release.
+`./scripts/release.sh 0.2.1` builds a universal (Apple silicon + Intel) `build/AIQuotabar.dmg` and `build/AIQuotabar.zip` for a release.
 
 For debugging, print what every provider returns: `swift build && .build/debug/AIQuotabar --dump`
 
